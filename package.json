@@ -1,0 +1,30 @@
+{
+  "name": "essay-ai-demo",
+  "version": "1.0.0",
+  "description": "AI essay generation and review demonstration using Vercel AI SDK and OpenRouter",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "bun run dist/index.js",
+    "dev": "bun run src/index.ts"
+  },
+  "keywords": [
+    "ai",
+    "essay",
+    "vercel-ai-sdk",
+    "openrouter"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@openrouter/ai-sdk-provider": "^1.4.0",
+    "ai": "^5.0.107",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "typescript": "^5.3.3"
+  }
+}
