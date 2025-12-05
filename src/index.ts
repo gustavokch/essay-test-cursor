@@ -1,10 +1,10 @@
 import { getConfig } from './config.js';
 import {
-  generateEssay,
-  reviewEssay,
-  updateEssayWithFeedback,
+    generateEssay,
+    reviewEssay,
+    updateEssayWithFeedback,
 } from './services/essayService.js';
-import { saveMarkdownFile, generateTimestamp } from './utils/fileUtils.js';
+import { generateTimestamp, saveMarkdownFile } from './utils/fileUtils.js';
 
 interface EssayWorkflowResult {
   originalEssay: EssayFile;
@@ -19,16 +19,20 @@ interface EssayFile {
   model: string;
 }
 
-async function runEssayWorkflow(prompt: string): Promise<EssayWorkflowResult> {
+async function runEssayWorkflow(prompt: string, language?: string): Promise<EssayWorkflowResult> {
   const config = getConfig();
   const timestamp = generateTimestamp();
 
   console.log('🚀 Starting essay generation workflow...');
-  console.log(`📝 Prompt: ${prompt}\n`);
+  console.log(`📝 Prompt: ${prompt}`);
+  if (language) {
+    console.log(`🌐 Language: ${language}`);
+  }
+  console.log();
 
   // Step 1: Generate initial essay
   console.log('📖 Step 1: Generating essay...');
-  const essayResult = await generateEssay(prompt, config);
+  const essayResult = await generateEssay(prompt, config, language);
   const essayFilename = `essay-${timestamp}.md`;
   const essayFilepath = await saveMarkdownFile(
     `# Essay\n\n**Model:** ${essayResult.model}\n**Generated:** ${new Date().toISOString()}\n**Prompt:** ${prompt}\n\n---\n\n${essayResult.content}`,
@@ -38,7 +42,7 @@ async function runEssayWorkflow(prompt: string): Promise<EssayWorkflowResult> {
 
   // Step 2: Review the essay
   console.log('🔍 Step 2: Reviewing essay...');
-  const reviewResult = await reviewEssay(essayResult.content, prompt, config);
+  const reviewResult = await reviewEssay(essayResult.content, prompt, config, language);
   const reviewFilename = `feedback-${timestamp}.md`;
   const reviewFilepath = await saveMarkdownFile(
     `# Essay Feedback\n\n**Review Model:** ${reviewResult.model}\n**Generated:** ${new Date().toISOString()}\n**Original Essay Model:** ${essayResult.model}\n\n---\n\n${reviewResult.content}`,
@@ -52,7 +56,8 @@ async function runEssayWorkflow(prompt: string): Promise<EssayWorkflowResult> {
     essayResult.content,
     reviewResult.content,
     prompt,
-    config
+    config,
+    language
   );
   const updatedFilename = `essay-updated-${timestamp}.md`;
   const updatedFilepath = await saveMarkdownFile(
@@ -89,15 +94,40 @@ async function main() {
 
   if (args.length === 0) {
     console.error('Error: Please provide an essay prompt as an argument.');
-    console.log('\nUsage: bun run dev "Your essay prompt here"');
-    console.log('   or: bun start "Your essay prompt here"');
+    console.log('\nUsage: bun run dev "Your essay prompt here" [--language <language>]');
+    console.log('   or: bun start "Your essay prompt here" [--language <language>]');
+    console.log('\nOptions:');
+    console.log('  --language, -l    Language for the essay (e.g., "English", "Spanish", "French")');
     process.exit(1);
   }
 
-  const prompt = args.join(' ');
+  // Parse arguments for language flag
+  let promptParts: string[] = [];
+  let language: string | undefined;
+  
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--language' || args[i] === '-l') {
+      if (i + 1 < args.length) {
+        language = args[i + 1];
+        i++; // Skip the next argument as it's the language value
+      } else {
+        console.error('Error: --language flag requires a value.');
+        process.exit(1);
+      }
+    } else {
+      promptParts.push(args[i]);
+    }
+  }
+
+  const prompt = promptParts.join(' ');
+
+  if (!prompt) {
+    console.error('Error: Please provide an essay prompt.');
+    process.exit(1);
+  }
 
   try {
-    const result = await runEssayWorkflow(prompt);
+    const result = await runEssayWorkflow(prompt, language);
 
     console.log('✨ Workflow completed successfully!\n');
     console.log('📁 Generated files:');
